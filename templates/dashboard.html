@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <h1 class="mb-4">Stock Analysis Dashboard</h1>
+
+    <!-- Stock Search Form -->
+    <form action="{{ url_for('search_stock') }}" method="POST" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="symbol" class="form-control" placeholder="Enter stock symbol (e.g., AAPL)"
+                required>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+
+    {% if stock_info %}
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="row">
+                <div class="card mb-3" style="max-width: 100%;">
+                    <div class="row g-0">
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title d-flex justify-content-between align-items-center">
+                                    {{ stock_info.longName }} ({{ stock_info.symbol }})
+                                    <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" data-bs-html="true"
+                                        title="Industry: {{ stock_info.industry }}<br>Sector: {{ stock_info.sector }}"></i>
+                                </h5>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-md-6">
+                                        <span class="fs-4" data-bs-toggle="tooltip" data-bs-html="true"
+                                            title="Open: ${{ '%.2f'|format(stock_info.open) }}<br>Day Range: ${{ '%.2f'|format(stock_info.dayLow) }} - ${{ '%.2f'|format(stock_info.dayHigh) }}">
+                                            ${{ '%.2f'|format(stock_info.currentPrice) }}
+                                        </span>
+                                        <small class="text-muted ms-1">
+                                            {{ '%.2f'|format((stock_info.currentPrice - stock_info.previousClose) /
+                                            stock_info.previousClose * 100) }}%
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6 text-md-end">
+                                        <span data-bs-toggle="tooltip" data-bs-html="true"
+                                            title="P/E: {{ '%.2f'|format(stock_info.trailingPE) }}<br>EPS: ${{ '%.2f'|format(stock_info.trailingEps) }}">
+                                            Mkt Cap: {{ '{:,.0f}'.format(stock_info.marketCap / 1e9) }}B
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="row g-2 text-muted small">
+                                    <div class="col-md-6">Vol: {{ '{:,.0f}'.format(stock_info.volume) }}</div>
+                                    <div class="col-md-6 text-md-end" data-bs-toggle="tooltip" data-bs-html="true"
+                                        title="50 Day Avg: ${{ '%.2f'|format(stock_info.fiftyDayAverage) }}<br>200 Day Avg: ${{ '%.2f'|format(stock_info.twoHundredDayAverage) }}">
+                                        52W: ${{ '%.2f'|format(stock_info.fiftyTwoWeekLow) }} - ${{
+                                        '%.2f'|format(stock_info.fiftyTwoWeekHigh) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-center justify-content-center">
+                            <button id="viewDetailsBtn" class="btn btn-primary">View All Details</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="allStockDetails" class="mt-4" style="display: none;">
+                    <h4>All Stock Details</h4>
+                    <table class="table table-striped">
+                        <tbody>
+                            {% for key, value in stock_info.items() %}
+                            <tr>
+                                <th>{{ key }}</th>
+                                <td>{{ value }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        var viewDetailsBtn = document.getElementById('viewDetailsBtn');
+                        var allStockDetails = document.getElementById('allStockDetails');
+                        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                            return new bootstrap.Tooltip(tooltipTriggerEl);
+                        });
+
+                        viewDetailsBtn.addEventListener('click', function () {
+                            if (allStockDetails.style.display === 'none') {
+                                allStockDetails.style.display = 'block';
+                                viewDetailsBtn.textContent = 'Hide Details';
+                            } else {
+                                allStockDetails.style.display = 'none';
+                                viewDetailsBtn.textContent = 'View All Details';
+                            }
+                        });
+                    });
+                </script>
+
+            </div>
+            <div class="col">
+                <div class="card" style="display: none;">
+                    <div class="card-body">
+                        <h5 class="card-title">Twitter Analysis</h5>
+                        <div class="row" style="height: 50vh; overflow-y: scroll;">
+                            {% for tweet in tweets %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ tweet.text }}</h5>
+                                    <p class="card-text">{{ tweet.sentiment }}</p>
+                                    <!-- vader sentiment -->
+                                    <p class="card-text">{{ tweet.vader_sentiment }}</p>
+                                    <a href="{{ tweet.url }}" target="_blank" class="btn btn-primary">Read More</a>
+                                </div>
+                                <div class="card-footer text-muted">
+                                    {{ tweet.date }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Reddit Analysis</h5>
+                        <div class="row" style="height: 50vh; overflow-y: scroll;">
+                            {% for post in reddit_posts %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ post.title }}</h5>
+                                    <p class="card-text">{{ post.selftext }}</p>
+                                    <!-- vader sentiment -->
+                                    <p class="card-text">TextBlob Sentiment: {{ post.sentiment }}</p>
+                                    <p class="card-text">Vader Sentiment: {{ post.vader_sentiment }}</p>
+                                    <br>
+                                    <p class="card-text"> Post Sentiment: {{ post.post_sentiment }} - {{
+                                        post.post_vader_sentiment }}</p>
+                                    <a href="{{ post.url }}" target="_blank" class="btn btn-primary">Read More</a>
+                                </div>
+                                <div class="card-footer text-muted">
+                                    {{ post.date }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">ML Analysis</h5>
+                    <div class="row" style="height: 35vh; overflow-y: auto;">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-center">Short-term Predictions (7 days)</h6>
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Model</th>
+                                        <th>Prediction</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>LSTM</td>
+                                        <td>${{ '%.2f'|format(predictions['short_predictions']['LSTM']) }}</td>
+                                        <td>{{ '%.2f'|format(predictions['short_confidences']['LSTM']) }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>RNN</td>
+                                        <td>${{ '%.2f'|format(predictions['short_predictions']['RNN']) }}</td>
+                                        <td>{{ '%.2f'|format(predictions['short_confidences']['RNN']) }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>GRU</td>
+                                        <td>${{ '%.2f'|format(predictions['short_predictions']['GRU']) }}</td>
+                                        <td>{{ '%.2f'|format(predictions['short_predictions']['GRU']) }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>LinearRegression</td>
+                                        <td>${{ '%.2f'|format(predictions['short_predictions']['LinearRegression']) }}
+                                        </td>
+                                        <td>{{ '%.2f'|format(predictions['short_confidences']['LinearRegression']) }}%
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>RandomForest</td>
+                                        <td>${{ '%.2f'|format(predictions['short_predictions']['RandomForest']) }}</td>
+                                        <td>{{ '%.2f'|format(predictions['short_confidences']['RandomForest']) }}%</td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-center">Long-term Predictions (30 days)</h6>
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Model</th>
+                                        <th>Prediction</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>LSTM</td>
+                                        <td>${{ '%.2f'|format(predictions['long_predictions']['LSTM']) }}</td>
+                                        <td>{{ '%.2f'|format(predictions['long_confidences']['LSTM']) }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>RNN</td>
+                                        <td>${{ '%.2f'|format(predictions['long_predictions']['RNN']) }}</td>
+                                        <td>{{ '%.2f'|format(predictions['long_confidences']['RNN']) }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>GRU</td>
+                                        <td>${{ '%.2f'|format(predictions['long_predictions']['GRU']) }}</td>
+                                        <td>{{ '%.2f'|format(predictions['long_confidences']['GRU']) }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>LinearRegression</td>
+                                        <td>${{ '%.2f'|format(predictions['long_predictions']['LinearRegression']) }}
+                                        </td>
+                                        <td>{{ '%.2f'|format(predictions['long_confidences']['LinearRegression']) }}%
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>RandomForest</td>
+                                        <td>${{ '%.2f'|format(predictions['long_predictions']['RandomForest']) }}</td>
+                                        <td>{{ '%.2f'|format(predictions['long_confidences']['RandomForest']) }}%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-12">
+                            <div class="alert alert-info" role="alert">
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                                These predictions are based on historical data and current market trends. Always conduct
+                                your own research before making investment decisions.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">News</h5>
+                    <div class="row" style="height: 50vh; overflow-y: scroll;">
+                        {% for article in articles %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ article.title }}</h5>
+                                <p class="card-text">{{ article.content }}</p>
+                                <a href="{{ article.url }}" target="_blank" class="btn btn-primary">Read
+                                    More</a>
+                            </div>
+                            <div class="card-footer text-muted">
+                                {{ article.source }} || {{ article.date }}
+                            </div>
+                            <!-- sentiment score of news -->
+                            <div class="card-footer text-muted">
+                                Sentiment Score: {{ article.sentiment }}<br>
+                                Vader Score: {{ article.vader_sentiment }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        {% endif %}
+
+
+        {% endblock %}
