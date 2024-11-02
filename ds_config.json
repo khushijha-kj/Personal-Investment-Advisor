@@ -1,0 +1,21 @@
+{
+    "LSTM": {
+        "steps": 60,
+        "epochs": 50,
+        "batch_size": 32
+    },
+    "RNN": {
+        "steps": 60,
+        "epochs": 50,
+        "batch_size": 32
+    },
+    "GRU": {
+        "steps": 60,
+        "epochs": 50,
+        "batch_size": 32
+    },
+    "LinearRegression": {},
+    "RandomForest": {
+        "n_estimators": 100
+    }
+}
